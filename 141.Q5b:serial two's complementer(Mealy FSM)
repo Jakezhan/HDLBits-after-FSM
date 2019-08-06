@@ -1,0 +1,57 @@
+module top_module (
+    input clk,
+    input areset,
+    input x,
+    output z
+); 
+	reg [1:0] state,next_state;
+    parameter IDLE=0;
+    parameter START=1;
+    
+    always @(posedge clk or posedge areset)
+        begin
+            if(areset)
+                begin
+                    state <= IDLE;
+                end
+            else
+                state <= next_state;
+        end
+    
+    always @(*)
+    	begin
+            case(state)
+                IDLE:
+                    begin
+                        if(x==1)
+                        	next_state <= START;
+                        else
+                            next_state <= IDLE;
+                    end
+                START:
+                    begin
+                        next_state <= START;
+                    end
+            endcase
+        end
+    
+    always @(*)
+    	begin
+            case(state)
+                IDLE:
+                    begin
+                        if(x)
+                        	z <= 1'b1;
+                        else
+                            z <= 1'b0;
+                    end
+                START:
+                    begin
+                        if(x)
+                        	z <= 1'b0;
+                        else
+                            z <= 1'b1;
+                    end
+            endcase
+        end
+endmodule
