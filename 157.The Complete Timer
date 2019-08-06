@@ -1,0 +1,146 @@
+module top_module (
+    input clk,
+    input reset,      // Synchronous reset
+    input data,
+    output [3:0] count,
+    output counting,
+    output done,
+    input ack );
+    
+	reg [3:0] state,next_state;
+    reg [9:0] sum;
+    parameter S=0;
+    parameter S1=1;
+    parameter S11=2;
+    parameter S110=3;
+    parameter B0=4;
+    parameter B1=5;
+    parameter B2=6;
+    parameter B3=7;
+    parameter COUNT=8;
+    parameter WAIT=9;
+    
+    always @(posedge clk)
+        begin
+            if(reset)
+            	state <= S;
+            else
+                state <= next_state;
+        end
+    
+    always @(*)
+    	begin
+            case(state)
+                S:
+                    begin
+                        if(data)
+                            next_state <= S1;
+                        else
+                            next_state <= S;
+                    end
+                S1:
+                    begin
+                        if(data)
+                            next_state <= S11;
+                        else
+                            next_state <= S;
+                    end
+                S11:
+                    begin
+                        if(data)
+                            next_state <= S11;
+                        else
+                            next_state <= S110;
+                    end
+                S110:
+                    begin
+                        if(data)
+                            next_state <= B0;
+                        else
+                            next_state <= S;
+                    end
+                B0:
+                    begin
+                        next_state <= B1;
+                    end
+                B1:
+                    begin
+                        next_state <= B2;
+                    end
+                B2:
+                    begin
+                        next_state <= B3;
+                    end
+                B3:
+                    begin
+                        next_state <= COUNT;
+                    end
+                COUNT:
+                    begin
+                        if((count==0)&(sum==999))
+                            next_state = WAIT;
+                        else
+                            next_state = COUNT;
+                    end
+                WAIT:
+                    begin
+                        if(ack)
+                            next_state = S;
+                        else
+                            next_state = WAIT;
+                    end
+            endcase
+        end
+	
+    always @(posedge clk)
+        begin
+            if(reset)
+                begin
+                    //counting <= 0;
+                    //done <= 0;
+                    count <= 4'b0000;
+                    sum <= 10'b0000000000;
+                end
+            else
+                case(state)
+                    B0:
+                        begin
+                            count[3] <= data;
+                        end
+                    B1:
+                        begin
+                            count[2] <= data;
+                        end
+                    B2:
+                        begin
+                            count[1] <= data;
+                        end
+                    B3:
+                        begin
+                            count[0] <= data;
+                        end
+                    COUNT:
+                        begin
+                            if(count >= 0)
+                            	begin
+                                    if(sum < 999)
+                                        sum <= sum+1;
+                                    else
+                                        begin
+                                            count <= count-1;
+                                            sum <= 0;
+                                        end
+                                end
+                        end
+                    default: 
+                        begin
+                            //count <= 0;
+                            sum <= 0;
+                        end
+                endcase
+        end
+    
+    assign counting = (state==COUNT)? 1:0;
+    assign done = (state==WAIT)? 1:0;
+    
+endmodule
